@@ -2,28 +2,55 @@
 title: "Hello World on GitHub"
 author: "Phong D. Nguyen"
 output: html_document
+knit: (function(inputFile, encoding) {
+  outDir <- 'docs';
+  rmarkdown::render(inputFile, 
+                    encoding=encoding,
+                    output_file=file.path(dirname(inputFile), outDir, 'index.html'))})
 ---
 
+<hr/>
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(tidyverse)
+library(ggrepel)
+#set chunk and figure default options
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, tidy = TRUE)
 ```
 
-## R Markdown
+```{r ggplot2Graph, fig.height=8, fig.width=10.5}
+# Data retrieve from kaggle.com
+mcdonald <- read_csv("data/menu.csv")
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# mcdonald %>% summary()
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+mcdonald$Category <- mcdonald$Category %>% factor()
 
-```{r cars}
-summary(cars)
+plot <- ggplot(data = mcdonald, 
+               aes(y=Calories, x=Carbohydrates, color=Category)) +
+          geom_point(aes(size=`Dietary Fiber`), alpha=0.75, shape=16) +
+          geom_smooth(span = 1.25, fill="grey90") +
+          theme_minimal(base_size = 14) +
+          ggtitle("McDonald's Menu \nCalories vs. Carbohydrates")
+
+line_ends <- ggplot_build(plot)$data[[2]] %>% group_by(colour) %>% filter(x==max(x))
+line_ends$Category <- mcdonald$Category %>% levels()
+
+plot + geom_label_repel(data=line_ends, 
+                   aes(x=line_ends$x,
+                       y=line_ends$y,
+                       label=Category),
+                   show.legend = FALSE,
+                   nudge_x = 1,
+                   label.size = NA,
+                   fill = alpha(c("white"),0))
 ```
 
-## Including Plots
+<hr/>
 
-You can also embed plots, for example:
+## Appendix
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r show-code, ref.label = all_labels(), echo = TRUE, eval = FALSE}
+
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
